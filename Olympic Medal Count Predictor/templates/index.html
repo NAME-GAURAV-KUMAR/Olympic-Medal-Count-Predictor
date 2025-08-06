@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Olympic Medal Predictor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f4f4f9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.7s;
+        }
+        .container {
+            background: rgba(255,255,255,0.98);
+            padding: 40px 35px 30px 35px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 1.5px 4px rgba(0,0,0,0.08);
+            display: inline-block;
+            width: 410px;
+            animation: fadeIn 1.2s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        h2 {
+            color: #1a237e;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .flag {
+            width: 60px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 18px;
+            display: none;
+        }
+        p {
+            color: #555;
+            margin-bottom: 25px;
+            font-size: 1.05em;
+        }
+        label {
+            font-weight: 500;
+            color: #333;
+            display: block;
+            margin-bottom: 7px;
+            text-align: left;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px 10px;
+            margin-bottom: 18px;
+            border: 1.5px solid #bfc9d9;
+            border-radius: 6px;
+            font-size: 1em;
+            background: #f7f9fc;
+            transition: border 0.2s;
+        }
+        select:focus, input[type="number"]:focus {
+            border-color: #007BFF;
+            outline: none;
+            background: #eef3fa;
+        }
+        button {
+            background: linear-gradient(90deg, #007BFF 60%, #00c6ff 100%);
+            color: white;
+            padding: 13px 0;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #0056b3 60%, #00aaff 100%);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .prediction {
+            margin-top: 32px;
+            padding: 22px 18px 15px 18px;
+            background: linear-gradient(90deg, #e0ffe0 0%, #f4fff4 100%);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(40,167,69,0.07);
+            animation: fadeIn 1s;
+        }
+        .prediction h3 {
+            font-size: 1.6em;
+            color: #28a745;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+        .prediction p {
+            font-size: 1em;
+            color: #388e3c;
+            margin: 0;
+        }
+        @media (max-width: 500px) {
+            .container {
+                width: 95vw;
+                padding: 25px 5vw 20px 5vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🏅 Olympic Medal Count Predictor</h2>
+        <img id="flag" class="flag" src="" alt="Country Flag">
+        <p>Select a country and enter the number of athletes.</p>
+
+        <form action="{{ url_for('predict') }}" method="post">
+            <label for="country">Country:</label>
+            <select id="country" name="country" required onchange="updateFlagAndBg()">
+                <option value="">-- Please select a country --</option>
+                {% for country in countries %}
+                    <option value="{{ country }}" {% if country == selected_country %}selected{% endif %}>{{ country }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="athletes">Number of Athletes:</label>
+            <input type="number" id="athletes" name="athletes" placeholder="e.g., 300" required min="1"/>
+
+            <button type="submit">Predict</button>
+        </form>
+
+        {% if prediction_text %}
+        <div class="prediction">
+            <h3>{{ prediction_text }}</h3>
+            <p>{{ details_text }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <script>
+        // Map country names to ISO 3166-1 alpha-2 codes and background gradients
+        const countryData = {
+            "United States": { code: "us", bg: "linear-gradient(135deg, #3c3b6e 0%, #b22234 100%)" },
+            "India":         { code: "in", bg: "linear-gradient(135deg, #ff9933 0%, #138808 100%)" },
+            "China":         { code: "cn", bg: "linear-gradient(135deg, #de2910 0%, #ffde00 100%)" },
+            "United Kingdom":{ code: "gb", bg: "linear-gradient(135deg, #00247d 0%, #cf142b 100%)" },
+            "Australia":     { code: "au", bg: "linear-gradient(135deg, #012169 0%, #ffd700 100%)" },
+            "Japan":         { code: "jp", bg: "linear-gradient(135deg, #ffffff 0%, #bc002d 100%)" },
+            "Germany":       { code: "de", bg: "linear-gradient(135deg, #000000 0%, #dd0000 50%, #ffce00 100%)" },
+            "France":        { code: "fr", bg: "linear-gradient(135deg, #0055a4 0%, #ffffff 50%, #ef4135 100%)" },
+            "Canada":        { code: "ca", bg: "linear-gradient(135deg, #ff0000 0%, #ffffff 100%)" },
+            "Brazil":        { code: "br", bg: "linear-gradient(135deg, #009c3b 0%, #ffdf00 100%)" },
+            // Add more countries as needed
+        };
+
+        function updateFlagAndBg() {
+            const select = document.getElementById('country');
+            const flag = document.getElementById('flag');
+            const country = select.value;
+            if (countryData[country]) {
+                flag.src = `https://flagcdn.com/w80/${countryData[country].code}.png`;
+                flag.style.display = "inline-block";
+                document.body.style.background = countryData[country].bg;
+            } else {
+                flag.style.display = "none";
+                document.body.style.background = "linear-gradient(135deg, #e0e7ff 0%, #f4f4f9 100%)";
+            }
+        }
+
+        // If a country is pre-selected (e.g., after form submit), show its flag and background
+        window.onload = function() {
+            updateFlagAndBg();
+        };
+    </script>
+</body>
+</html>
