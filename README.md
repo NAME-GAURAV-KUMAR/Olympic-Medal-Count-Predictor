@@ -2,7 +2,7 @@
 
 A web application that predicts the number of medals a country will win at the Olympics based on its historical data and the number of participating athletes. This project combines a machine learning model (Linear Regression) with a user-friendly web interface built with Flask.
 
-![Screenshot](screenshot.png)
+![Screenshot](Screenshot.png)
 <!-- Replace the image above with a screenshot of your running application -->
 
 ---
